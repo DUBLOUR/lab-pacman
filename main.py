@@ -4,7 +4,7 @@ root = tk.Tk()
 
 root.wm_title('Baka-baka-baka')
 padding = [12, 81, -12, 20]
-pacman_size = 20
+pacman_size = 24
 cell_size = 24
 field_size = [22, 22]
 
@@ -42,7 +42,13 @@ def create_memes():
                 fill="yellow", outline="black", tag="pacman")
     canvas.create_line((8,8), (8,24), tag="pacman")
     canvas.create_line((24,8), (24,24), tag="pacman")
-    
+      
+    global gim
+    path = f'resourses/textures/small_golden_helmet.png'
+    gim.append(part(tk.PhotoImage(file=path)))
+    canvas.create_image(0, 0, image=gim[-1], anchor=tk.NW, tag="pacman")
+
+
     pac_x = 11 * cell_size + padding[0]-pacman_size//2
     pac_y = 16 * cell_size + padding[1]-pacman_size//2
     canvas.move("pacman", pac_x, pac_y)    
@@ -136,20 +142,20 @@ canvas.pack()
 #add_background()
 
 
+def part(source: tk.PhotoImage) -> tk.PhotoImage:
+    def tuple_rgb(arg):
+        return '#{:02x}{:02x}{:02x}'.format(*arg)
+    
+    dest = tk.PhotoImage(width=24, height=24)
+    for j in range(24):
+        for i in range(24):
+            dest.put(tuple_rgb(source.get(i, j)), to=(i, j))
+    return dest
+
 
 def put_cell_img(name, x, y):
-    def part(source: tk.PhotoImage) -> tk.PhotoImage:
-        def tuple_rgb(arg):
-            return '#{:02x}{:02x}{:02x}'.format(*arg)
-        
-        dest = tk.PhotoImage(width=24, height=24)
-        for j in range(24):
-            for i in range(24):
-                dest.put(tuple_rgb(source.get(i, j)), to=(i, j))
-        return dest
-
     global gim
-    path = f'resourses/textures/{name}.png'
+    path = f'resourses/textures/small_{name}.png'
     gim.append(part(tk.PhotoImage(file=path)))
     canvas.create_image(x, y, image=gim[-1], anchor=tk.NW)
 
@@ -185,18 +191,23 @@ def paint_background():
             }[tp]
         
             texture = {
-                '#': 'small_bricks',
-                '.': 'small_diamond_ore',
-                ' ': 'small_stone',
+                '#': 'bricks',
+                '.': 'diamond_ore',
+                ' ': 'stone',
+                'P': 'stone',
+                '_': 'oak_planks',
+                '|': 'stone',
+                'G': 'cobblestone',
+                'B': 'mossy_cobblestone'
             }.get(tp, None)
 
             xc = x*cell_size + padding[0] - cell_size//2
             yc = y*cell_size + padding[1] - cell_size//2
-            canvas.create_rectangle(xc, yc, xc+cell_size, yc+cell_size, fill=color)
-    
+            
             if texture != None:
                 put_cell_img(texture, xc, yc)
-
+            else:
+                canvas.create_rectangle(xc, yc, xc+cell_size, yc+cell_size, fill=color)    
 
 #paint_background()
 paint_background()
