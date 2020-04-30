@@ -4,7 +4,7 @@ root = tk.Tk()
 
 root.wm_title('Baka-baka-baka')
 padding = [12, 81, -12, 20]
-pacman_size = 24
+pacman_size = 22
 cell_size = 24
 field_size = [22, 22]
 
@@ -17,6 +17,14 @@ pacman_direction = 'U'
 pacman_next_direction = 'U'
 score_point = 0
 count_diamonds = 0
+
+ghost_size = 20
+ghost_count = 0
+ghosts_init_cell = []
+pac_init_cell = [0,0]
+pacman_state = "prey"
+ghost_status = []
+
 
 gim = []
 last_cell_object = [[None for j in range(field_size[0]+2)] for i in range(field_size[1]+2)] 
@@ -51,9 +59,19 @@ def create_memes():
     gim.append(tk.PhotoImage(file=path))
     #canvas.create_image(0, 0, image=gim[-1], anchor=tk.NW, tag="pacman")
 
-    pac_x = 11 * cell_size + padding[0] - pacman_size // 2
-    pac_y = 16 * cell_size + padding[1] - pacman_size // 2
+    pac_x = pac_init_cell[0] * cell_size + padding[0] - pacman_size // 2
+    pac_y = pac_init_cell[1] * cell_size + padding[1] - pacman_size // 2
     canvas.move("pacman", pac_x, pac_y)
+
+    for i in range(ghost_count):
+        id = "ghost" + str(i)
+        enemy = canvas.create_oval((0, 0), (ghost_size, ghost_size),
+                              fill="red", outline="black", tag=id)
+    
+        x = ghosts_init_cell[i][0] * cell_size + padding[0] - ghost_size // 2
+        y = ghosts_init_cell[i][1] * cell_size + padding[1] - ghost_size // 2
+        canvas.move(id, x, y)
+
 
 
 canvas = tk.Canvas(root, width=window_width, height=window_height)
@@ -167,6 +185,50 @@ def drawCell(y, x):
     print(canvas_object)
 
 
+def getTagCoord(tag):
+    c = list(map(int, canvas.coords(tag)))
+    return (c[0] + c[2]) // 2, (c[1] + c[3]) // 2
+
+
+def kill_pacman():
+    print("You are dead...")
+
+
+def kill_ghost(ind):
+    print("Ghost", ind, "is killed")
+    global ghost_status
+    ghost_status[ind] = "fly";
+    tag = "ghost" + str(ind)
+    
+    print(canvas.find_withtag(tag))
+    canvas.itemconfig(canvas.find_withtag(tag)[0], fill="lightgreen")
+
+
+def checkGhostCollision():
+    def handle_collision(ind):
+        if ghost_status[ind] == "fly":
+            return;
+
+        print("IS COLLISTION WITH", ind, "!!!")
+
+        if pacman_state == "prey":
+            kill_pacman()
+        elif pacman_state == "hunter":
+            kill_ghost(ind)
+
+
+
+    px, py = getTagCoord("pacman")
+    max_dist_sq = (pacman_size + ghost_size) ** 2 // 4
+
+    for i in range(ghost_count):
+        gx, gy = getTagCoord("ghost" + str(i))
+        
+        dist_sq = (px-gx)**2 + (py-gy)**2
+        if dist_sq < max_dist_sq:
+            handle_collision(i);
+            
+    
 
 def moveBall():
 
@@ -177,6 +239,7 @@ def moveBall():
     #print(x, y)
     if isCellCenter(x, y):
         cellHandling(x, y)
+    checkGhostCollision()
 
     dir_to_vect = {'U': [0, -1], 'D': [0, 1], 'L': [-1, 0], 'R': [1, 0]}
     vec = dir_to_vect[pacman_next_direction]
@@ -250,21 +313,35 @@ def paint_background():
         print(map_data)
         return map_data
 
-    global map_field
-    global count_diamonds
+    global map_field, count_diamonds, ghosts_init_cell, pac_init_cell
     map_field = get_level_data(2)
 
     for x in range(field_size[0] + 1):
         for y in range(field_size[1]):
             drawCell(y, x)
-            if map_field[y][x] == '.':
+
+            tp = map_field[y][x]
+            if tp == '.':
                 count_diamonds += 1
+            if tp == 'G':
+                ghosts_init_cell.append([x,y])
+            if tp == 'P':
+                pac_init_cell = [x,y]
+    
+    global ghost_count, ghost_status
+    ghost_count = len(ghosts_init_cell);
+    ghost_status = ["normal"] * ghost_count 
 
 
-
+def changeRoles():
+    global pacman_state, ghost_status
+    if pacman_state == "prey":
+        pacman_state = "hunter"
+    
 
 # paint_background()
 paint_background()
+changeRoles()
 # exit()
 show_grid()
 
