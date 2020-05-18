@@ -2,8 +2,7 @@ import tkinter as tk
 #import random
 root = tk.Tk()
 
-root.title("BAKA")
-root.resizable(width=False, height=False)
+root.wm_title('Baka-baka-baka')
 padding = [12, 81, -12, 20]
 pacman_size = 22
 cell_size = 24

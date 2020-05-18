@@ -16,4 +16,4 @@ class Presenter:
 
 
     def show(self):
-        pass
+        self._view.show()

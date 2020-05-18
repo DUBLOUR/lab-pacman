@@ -1,6 +1,6 @@
-from model import Model
-from view import View
-from presenter import Presenter
+from model import *
+from view import *
+from presenter import * 
 
 
 def main():
