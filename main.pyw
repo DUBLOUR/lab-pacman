@@ -5,8 +5,14 @@ from presenter import *
 
 def main():
     model = Model()
-    view = View()
+    view = View(model)
     presenter = Presenter(model, view)
+    model.init_level(2)
+    view.paint_background()
+    view.create_memes()
+    presenter.set_binds()
+    #view.show_grid()
+    presenter.moveBall()
     presenter.show()
 
 
