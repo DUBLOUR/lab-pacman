@@ -1,0 +1,10 @@
+{
+    "#": ["red", "bricks"],
+    ".": ["black", "diamond_ore"],
+    " ": ["blue", "stone"],
+    "P": ["yellow", "stone"],
+    "B": ["orange", "mossy_cobblestone"],
+    "G": ["white", "stone"],
+    "_": ["green", "oak_planks"],
+    "|": ["magenta", "stone"]
+}

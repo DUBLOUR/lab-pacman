@@ -7,12 +7,14 @@ def main():
     model = Model()
     view = View(model)
     presenter = Presenter(model, view)
+    
     model.init_level(2)
-    view.paint_background()
-    view.create_memes()
+    view.load_textures()
+    view.draw_background()
+    view.create_enemies()
     presenter.set_binds()
     #view.show_grid()
-    presenter.moveBall()
+    presenter.main_loop()
     presenter.show()
 
 
