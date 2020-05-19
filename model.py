@@ -1,11 +1,15 @@
 import random
 import json
+import time
 
 
 def get_dist(px, py, gx, gy):
     dx = px - gx
     dy = py - gy
     return (dx**2 + dy**2) ** 0.5
+
+def ceil(x):
+    return int(x + 1 - 1e-6)
 
 
 class Enemy:
@@ -14,6 +18,10 @@ class Enemy:
         self.size = 0
         self.x = 0
         self.y = 0
+
+        self.direction = None
+        self.next_direction = None
+        
 
     
     def get_center(self):
@@ -35,12 +43,12 @@ class PacmanModel(Enemy):
         self.direction = 'U'
         self.next_direction = 'U'
         self.state = "prey"
-        self.state = "hunter"
-
+        
         self.init_cell = [0,0]
         self.x = 0
         self.y = 0
                 
+
 
 class GhostModel(Enemy):
     def __init__(self, model, id, cell_x, cell_y, status):
@@ -51,21 +59,50 @@ class GhostModel(Enemy):
         self.status = status
 
         self.speed = random.uniform(0.3, 2)
-        self.color = "red"
+        self.color_status = {
+            "hunter": "red",
+            "prey": "lightgreen",
+            "fly": "blue"
+        }
 
 
     def at_home(self):
-        x = round(self.x, 3)
-        y = round(self.y, 3)
+        x, y = self.x, self.y
         hx, hy = self.get_start_xy()
-        hx = round(hx, 3)
-        hy = round(hy, 3)
-        
-        return (x, y) == (hx, hy)
+        return get_dist(x, y, hx, hy) < 1e-6
 
 
     def stop_fly(self):
-        self.status = "normal"
+        self.status = "prey"
+        self.x = int(self.x + 0.001)
+        self.y = int(self.y + 0.001)
+
+
+    def get_possible_steps(self):
+        x, y = self.get_center()
+        #print('\n', self.__dict__, x, y)
+        if not self._model.is_cell_center(x, y):
+            return self.direction
+        
+        #print(x, y, '\t', pacman.direction, pacman.next_direction)
+
+        dir_to_vect = {
+            "U": [0, -1], 
+            "D": [0, 1], 
+            "L": [-1, 0], 
+            "R": [1, 0]
+        }
+
+        possibles = []
+        for key, [dx, dy] in dir_to_vect.items():
+            if self._model.is_avaiable_coord(x + dx, y + dy):
+                possibles.append(key)
+
+        #print(self.__dict__, possibles)
+        return possibles
+
+
+
 
 
 
@@ -76,6 +113,8 @@ class Model:
         self.field_size = [22, 22]   
         self.score_point = 0
         self.count_diamonds = 0
+        self.bonus_lasting = 0
+        self.frame_time = 0
         
         self.level_id = 0
         self.level_finishes = False
@@ -99,14 +138,13 @@ class Model:
 
     def add_ghost(self, x, y):
         id = len(self.ghosts)
-        g = GhostModel(self, id, x, y, "normal")
+        g = GhostModel(self, id, x, y, "hunter")
         g.init_cell = [x,y]
         g.x, g.y = g.get_start_xy()
         self.ghosts.append(g)
 
 
     def ghost_moving(self, g, speed):
-        speed *= g.speed
         def fly_moving():
             need_x, need_y = g.get_start_xy()
             dx = need_x - g.x
@@ -114,39 +152,102 @@ class Model:
             #dist = get_dist(g.x, g.y, need_x, need_y)
             dist = (dx ** 2 + dy ** 2) ** 0.5
 
-            if dist <= speed:
+            if dist <= 1:
                 return dx, dy
 
-            return dx/dist, dy/dist
+            dx *= speed / dist
+            dy *= speed / dist
+            return dx, dy
             
 
-        def hunt_moving():
-            need_x, need_y = self.pacman.get_center()
-            dx = need_x - g.x
-            dy = need_y - g.y
-            #dist = get_dist(g.x, g.y, need_x, need_y)
-            dist = (dx ** 2 + dy ** 2) ** 0.5
+        def cell_walking(motivations):
+            if random.random() > speed/ceil(speed):
+                return 0,0
 
-            return dx/dist, dy/dist
+            need_x, need_y = self.pacman.get_center()
+
+            avaiable_steps = g.get_possible_steps()
+            ant_dir = {
+                "U": "D",
+                "D": "U",
+                "L": "R",
+                "R": "L",
+                None: None
+            }[g.direction]
+
+            vct = {
+                "U": [0, -1], 
+                "D": [0, 1], 
+                "L": [-1, 0], 
+                "R": [1, 0]
+            }
+
+            weights = [1] * len(avaiable_steps)
+            if g.direction in avaiable_steps:
+                ind = avaiable_steps.index(g.direction) 
+                weights[ind] *= motivations["go_forward"]
+
+            if ant_dir in avaiable_steps:
+                ind = avaiable_steps.index(ant_dir) 
+                weights[ind] *= motivations["turn_around"]
+            
+            for i in range(len(avaiable_steps)):
+                x = g.x + vct[avaiable_steps[i]][0]
+                y = g.y + vct[avaiable_steps[i]][1]
+                p = self.pacman
+                now_dist = get_dist(g.x, g.y, p.x, p.y)
+                new_dist = get_dist(x, y, p.x, p.y)
+                if new_dist < now_dist: # closer to pacman
+                    weights[i] *= motivations["to_pac"]
+                    if new_dist < 4*self.cell_size:
+                        weights[i] *= motivations["to_close_pac"]
+
+            g.direction = random.choices(avaiable_steps, weights)[0]
+
+            dx, dy = vct[g.direction]
+            dx *= ceil(speed)
+            dy *= ceil(speed)
+            return dx, dy
+
+
+        def hunt_moving():
+            motivations = {
+                "go_forward": 2,
+                "turn_around": 1/8,
+                "to_pac": 2,
+                "to_close_pac": 3
+            }
+            return cell_walking(motivations)
 
 
         def avoid_moving():
-            home = g.get_start_xy()
-            hunter = self.pacman.get_center()
-
-            dx = (home[0] - g.x)**0.5 - (hunter[0] - g.x)**0.7
-            dy = (home[1] - g.y)**0.5 - (hunter[1] - g.y)**0.7
-            return dx, dy
+            motivations = {
+                "go_forward": 2,
+                "turn_around": 1/8,
+                "to_pac": 1/2,
+                "to_close_pac": 0
+            }
+            return cell_walking(motivations)
 
 
         func_transpose = {
             "fly": fly_moving,
-            "avoid": avoid_moving,
-            "normal": hunt_moving
+            "prey": avoid_moving,
+            "hunter": hunt_moving
         }[g.status]
 
+        
         dx, dy = func_transpose()
-        return dx * speed, dy * speed
+
+            # left <-> right teleport
+        world_width = 24 * self.cell_size
+        x = g.x + dx 
+        if x <= -self.pacman.size:
+            dx = world_width
+        elif x >= world_width - self.pacman.size + 1:
+            dx = -world_width
+
+        return dx, dy
 
 
 
@@ -230,6 +331,19 @@ class Model:
         parse_map()
         
 
+    def update_statuses(self):
+        if self.frame_time > self.bonus_lasting:
+            self.pacman.status = "prey"
+            for g in self.ghosts:
+                if g.status != "fly":
+                    g.status = "hunter"
+            return
+
+        self.pacman.status = "hunter"
+        for g in self.ghosts:
+            if g.status != "fly":
+                g.status = "prey"
+
         
     def eat_point(self, y, x):
         self.map_field[y][x] = ' '
@@ -239,5 +353,11 @@ class Model:
             self.level_finishes = True
         print(self.score_point)
     
+
+    def eat_bonus(self, y, x):
+        self.map_field[y][x] = ' '
+        self.score_point += 1000
+        bonus_duration = 1000
+        self.bonus_lasting = self.frame_time + bonus_duration
 
     

@@ -89,6 +89,10 @@ class Presenter:
             self._model.eat_point(y, x)
             hasChange = True
 
+        if tp == 'B':
+            self._model.eat_bonus(y, x)
+            hasChange = True
+
         if hasChange:
             self._view.draw_cell(y, x)
 
@@ -97,7 +101,7 @@ class Presenter:
         p = self._model.pacman
         p.x += x; 
         p.y += y
-        self._view.canvas.move("pacman", x, y)
+        self._view.move_object("pacman", x, y)
 
 
     def move_ball(self):
@@ -106,39 +110,38 @@ class Presenter:
         #print(x, y, '\t', pacman.direction, pacman.next_direction)
 
         dir_to_vect = {
-            'U': [0, -1], 
-            'D': [0, 1], 
-            'L': [-1, 0], 
-            'R': [1, 0]
+            "U": [0, -1], 
+            "D": [0, 1], 
+            "L": [-1, 0], 
+            "R": [1, 0]
         }
-        vec = dir_to_vect[pacman.next_direction]
+        dx, dy = dir_to_vect[pacman.next_direction]
 
-        if self._model.is_avaiable_coord(x + vec[0], y + vec[1]):
+        if self._model.is_avaiable_coord(x + dx, y + dy):
             pacman.direction = pacman.next_direction
             
-        vec = dir_to_vect[pacman.direction]
+        dx, dy = dir_to_vect[pacman.direction]
 
         world_width = 24 * self._model.cell_size
-        if x + vec[0] == -pacman.size:
+        if x + dx == -pacman.size:
             # teleport Left -> Right
             self.move_pacman(world_width, 0)
-        elif x + vec[0] == world_width - pacman.size + 1:
+        elif x + dx == world_width - pacman.size + 1:
             # teleport Right -> Left
             self.move_pacman(-world_width, 0)
-        elif self._model.is_avaiable_coord(x + vec[0], y + vec[1]):
+        elif self._model.is_avaiable_coord(x + dx, y + dy):
             # Standart moving
-            self.move_pacman(vec[0], vec[1])
+            self.move_pacman(dx, dy)
         
+
+    
 
     def kill_pacman(self):
         print("You are dead...")
 
 
     def kill_ghost(self, ghost):
-        #print("Ghost", ghost.id, "is killed")
         ghost.status = "fly";
-        #ghost.init_cell = [5, 5]
-        self._view.set_ghost_color(ghost, "lightgreen")
         
 
 
@@ -147,8 +150,7 @@ class Presenter:
             if g.status == "fly":
                 return;
 
-            print("IS COLLISTION WITH", g.id, "!!!")
-
+            #print("IS COLLISTION WITH", g.id, "!!!")
             if pac.state == "prey":
                 self.kill_pacman()
             elif pac.state == "hunter":
@@ -160,9 +162,9 @@ class Presenter:
         
         for g in self._model.ghosts:
             gx, gy = g.get_center()
-            max_dist_sq = (pac.size + g.size) ** 2 // 4
-            dist_sq = (px-gx)**2 + (py-gy)**2
-            if dist_sq < max_dist_sq:
+            max_dist_square = (pac.size + g.size) ** 2 // 4
+            dist_square = (px-gx)**2 + (py-gy)**2
+            if dist_square < max_dist_square:
                 handle_collision(g);
                 
 
@@ -172,27 +174,40 @@ class Presenter:
 
 
     def move_ghosts(self):
-        speed = 1
         for g in self._model.ghosts:
             if g.at_home() and g.status == "fly":
                 g.stop_fly()
-                self._view.set_ghost_color(g)
-
-            dx, dy = self._model.ghost_moving(g, speed)
+                
+            dx, dy = self._model.ghost_moving(g, speed=1)
             g.x += dx
             g.y += dy
             tag = "ghost" + str(g.id)
-            self._view.canvas.move(tag, dx, dy)
+            self._view.move_object(tag, dx, dy)
+
+
+    def update_statuses(self):
+        self._model.update_statuses()
+        for g in self._model.ghosts:
+            color = {
+                "hunter": "red",
+                "prey": "lightgreen",
+                "fly": "blue"
+            }[g.status]
+            self._view.set_ghost_color(g)
+
 
 
     def main_loop(self):
         if self._model.level_finishes:
             self.end_game()
 
+        self._model.frame_time += 1
         self.handle_pacman_cell()
+        self.update_statuses()
         self.check_ghosts_collision()
         self.move_ghosts()
         self.move_ball()
+
         
         animation_delay = int(1000 / self.fps)
         self._view._root.after(animation_delay, self.main_loop)

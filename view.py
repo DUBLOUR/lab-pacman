@@ -41,6 +41,10 @@ class View:
         self._root.mainloop()
 
 
+    def move_object(self, tag, dx, dy):
+        self.canvas.move(tag, dx, dy)
+
+
     def load_textures(self):
         textures = self.model.map_colors.values()
         unical = set()
@@ -108,7 +112,7 @@ class View:
 
     def set_ghost_color(self, g, color=None):
         if not color:
-            color = g.color
+            color = g.color_status[g.status]
         tag = "ghost" + str(g.id)
         need_object = self.canvas.find_withtag(tag)[0]
         self.canvas.itemconfig(need_object, fill=color)
@@ -127,9 +131,10 @@ class View:
 
         def create_ghost(g):
             tag = "ghost" + str(g.id)
+            col = g.color_status[g.status]
             canvas.create_oval( (g.x, g.y), 
                                 (g.x+g.size, g.y+g.size),
-                                fill=g.color, 
+                                fill=col, 
                                 outline="black", 
                                 tag=tag)
 
