@@ -31,7 +31,8 @@ class View:
 
         self.canvas = tk.Canvas(self._root, 
                                 width=self.window_width, 
-                                height=self.window_height)
+                                height=self.window_height,
+                                highlightthickness=0)
         self.canvas.focus_set()
         self.canvas.pack()
 
@@ -51,7 +52,6 @@ class View:
             img = f'resourses/textures/small_{t}.png'
             self.image[t] = tk.PhotoImage(file=img)
         
-
 
 
     def get_cell_image(self, y, x):
@@ -105,6 +105,14 @@ class View:
                 if self.model.isAvaiableCoord(x, y):
                     self.canvas.create_line(x, y, x, y, width=1, fill="gray")
 
+
+    def set_ghost_color(self, g, color=None):
+        if not color:
+            color = g.color
+        tag = "ghost" + str(g.id)
+        need_object = self.canvas.find_withtag(tag)[0]
+        self.canvas.itemconfig(need_object, fill=color)
+
     
     def create_enemies(self):
         canvas = self.canvas
@@ -118,11 +126,12 @@ class View:
         
 
         def create_ghost(g):
+            tag = "ghost" + str(g.id)
             canvas.create_oval( (g.x, g.y), 
                                 (g.x+g.size, g.y+g.size),
-                                fill="red", 
+                                fill=g.color, 
                                 outline="black", 
-                                tag=g.id)
+                                tag=tag)
 
 
         create_pacman(self.model.pacman)

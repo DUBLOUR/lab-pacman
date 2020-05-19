@@ -7,15 +7,7 @@ def main():
     model = Model()
     view = View(model)
     presenter = Presenter(model, view)
-    
-    model.init_level(2)
-    view.load_textures()
-    view.draw_background()
-    view.create_enemies()
-    presenter.set_binds()
-    #view.show_grid()
-    presenter.main_loop()
-    presenter.show()
+    presenter.start_game()
 
 
 if __name__ == '__main__':

@@ -28,6 +28,23 @@ class Presenter:
         exit()
 
 
+    def start_game(self):
+        self._model.init_level(2)
+        self._view.load_textures()
+        self._view.draw_background()
+        self._view.create_enemies()
+        self.set_binds()
+        #view.show_grid()
+        self.main_loop()
+        self.show()
+
+
+    def show_manual(self):
+        print("      WASD or Arrows - move Pacman")
+        print("     `h' or `?' - show this manual")
+        print("         `q' - quit from game")
+
+
     def keyboard_input(self, event=None):
         convertor = dict({
             'w': 'U', 'Up': 'U',
@@ -41,6 +58,9 @@ class Presenter:
         if key == 'q':
             self.exit()
 
+        if key == 'question' or key == 'h':
+            self.show_manual()
+
         if key in convertor:
             self._model.pacman.next_direction = convertor[key]
 
@@ -50,12 +70,17 @@ class Presenter:
         pass
 
 
-    def cell_handling(self, x, y):
+    def handle_pacman_cell(self):
+        x, y = self._model.pacman.get_center()
+        if  not self._model.is_cell_center(x, y):
+            return
+
         x = (x - self._model.padding[0]) // self._model.cell_size
         y = (y - self._model.padding[1]) // self._model.cell_size
         if  not(0 <= x < self._model.field_size[0]) or \
             not(0 <= y < self._model.field_size[1]):
             return
+
 
         tp = self._model.map_field[y][x]
         #print("IS CELL", x, y, tp)
@@ -70,19 +95,15 @@ class Presenter:
 
     def move_pacman(self, x, y):
         p = self._model.pacman
-        p.x += x; p.y += y
+        p.x += x; 
+        p.y += y
         self._view.canvas.move("pacman", x, y)
 
 
     def move_ball(self):
-
         pacman = self._model.pacman
-        
         x, y = pacman.get_center()
         #print(x, y, '\t', pacman.direction, pacman.next_direction)
-        if self._model.is_cell_center(x, y):
-             self.cell_handling(x, y)
-        # checkGhostCollision()
 
         dir_to_vect = {
             'U': [0, -1], 
@@ -97,20 +118,80 @@ class Presenter:
             
         vec = dir_to_vect[pacman.direction]
 
+        world_width = 24 * self._model.cell_size
         if x + vec[0] == -pacman.size:
-            self.move_pacman(24 * self._model.cell_size, 0)
-        elif x + vec[0] == 24 * self._model.cell_size - pacman.size + 1:
-            self.move_pacman(-24 * self._model.cell_size, 0)
+            # teleport Left -> Right
+            self.move_pacman(world_width, 0)
+        elif x + vec[0] == world_width - pacman.size + 1:
+            # teleport Right -> Left
+            self.move_pacman(-world_width, 0)
         elif self._model.is_avaiable_coord(x + vec[0], y + vec[1]):
+            # Standart moving
             self.move_pacman(vec[0], vec[1])
         
+
+    def kill_pacman(self):
+        print("You are dead...")
+
+
+    def kill_ghost(self, ghost):
+        #print("Ghost", ghost.id, "is killed")
+        ghost.status = "fly";
+        #ghost.init_cell = [5, 5]
+        self._view.set_ghost_color(ghost, "lightgreen")
+        
+
+
+    def check_ghosts_collision(self):
+        def handle_collision(g):
+            if g.status == "fly":
+                return;
+
+            print("IS COLLISTION WITH", g.id, "!!!")
+
+            if pac.state == "prey":
+                self.kill_pacman()
+            elif pac.state == "hunter":
+                self.kill_ghost(g)
+
+
+        pac = self._model.pacman
+        px, py = pac.get_center()
+        
+        for g in self._model.ghosts:
+            gx, gy = g.get_center()
+            max_dist_sq = (pac.size + g.size) ** 2 // 4
+            dist_sq = (px-gx)**2 + (py-gy)**2
+            if dist_sq < max_dist_sq:
+                handle_collision(g);
+                
+
+    def end_game(self):
+        print("YAHO")
+        self.exit()
+
+
+    def move_ghosts(self):
+        speed = 1
+        for g in self._model.ghosts:
+            if g.at_home() and g.status == "fly":
+                g.stop_fly()
+                self._view.set_ghost_color(g)
+
+            dx, dy = self._model.ghost_moving(g, speed)
+            g.x += dx
+            g.y += dy
+            tag = "ghost" + str(g.id)
+            self._view.canvas.move(tag, dx, dy)
 
 
     def main_loop(self):
         if self._model.level_finishes:
-            print("YAHO")
-            self.exit()
+            self.end_game()
 
+        self.handle_pacman_cell()
+        self.check_ghosts_collision()
+        self.move_ghosts()
         self.move_ball()
         
         animation_delay = int(1000 / self.fps)
