@@ -24,6 +24,7 @@ class Model:
 
         self.is_lose = False
         self.is_win = False
+        self.pause = False
 
         self.ghosts = []
         self.pacman = PacmanModel(self)
@@ -254,7 +255,7 @@ class Model:
 
     def kill_pacman(self):
         self.pacman.lives -= 1
-        if self.pacman.lives <= 0:
+        if self.pacman.lives <= 0 and not self.is_win:
             self.game_over(0)
 
         immortality_duration = 300 // 2

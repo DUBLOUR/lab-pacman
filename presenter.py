@@ -47,10 +47,10 @@ class Presenter:
 
     def _keyboard_input(self, event=None):   
         convertor = dict({
-            'w': 'U', 'W': 'U', 'Up': 'U',
-            'a': 'L', 'A': 'L', 'Left': 'L',
-            's': 'D', 'S': 'D', 'Down': 'D',
-            'd': 'R', 'D': 'R', 'Right': 'R'
+            'w': 'U',  'W': 'U',  'Up': 'U',
+            'a': 'L',  'A': 'L',  'Left': 'L',
+            's': 'D',  'S': 'D',  'Down': 'D',
+            'd': 'R',  'D': 'R',  'Right': 'R'
         })
 
         key = str(event.keysym)
@@ -61,9 +61,16 @@ class Presenter:
         if key == 'question' or key == 'h':
             self._show_manual()
 
+        if key == 'p' or key == 'P':
+            self.pause()
+
+
         if key in convertor:
             self._model.pacman.next_direction = convertor[key]
 
+
+    def pause(self):
+        self._model.pause = not self._model.pause
 
 
     def _handle_pacman_cell(self):
@@ -213,17 +220,18 @@ class Presenter:
 
 
     def _main_loop(self):
-        self._model.frame_time += 1
-        if not self._model.frame_time % 5:
-            self._model.score_point += 1
-        self._handle_pacman_cell()
-        self._update_statuses()
-        self._check_ghosts_collision()
-        self._move_ghosts()
-        self._move_ball()
-        self._view.update_info()
+        if not self._model.pause:
+            self._model.frame_time += 1
+            if not self._model.frame_time % 5:
+                self._model.score_point += 1
+            self._handle_pacman_cell()
+            self._update_statuses()
+            self._check_ghosts_collision()
+            self._move_ghosts()
+            self._move_ball()
+            self._view.update_info()
 
-        
+            
         animation_delay = int(1000 / self._model.fps)
         self._view._root.after(animation_delay, self._main_loop)
 

@@ -107,9 +107,9 @@ class View:
 
         
         self._info["keyboard"] = ShadowLabel(self, 
-                                text="Use Q for quit\n" +
-                                     "WASD/Arrows for move", 
-                                x=3, 
+                                text="WASD/Arrows for move\n" + 
+                                     "Q for quit, P for pause", 
+                                x=4, 
                                 y=self.window_height-5,
                                 anchor="sw",
                                 size=12)
