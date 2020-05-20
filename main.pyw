@@ -4,9 +4,7 @@ from presenter import *
 
 
 def main():
-    model = Model()
-    view = View(model)
-    presenter = Presenter(model, view)
+    presenter = Presenter()
     presenter.start_game()
 
 

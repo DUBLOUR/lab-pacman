@@ -2,18 +2,13 @@ from model import Model
 from view import View
 
 class Presenter:
-    def __init__(self, model, view):
-        self._init_model(model)
-        self._init_view(view)
+    def __init__(self):
+        self._levels = ["1t", "2"]
+        self._now_level = 0
 
-
-    def _init_model(self, model):
-        self._model = model
-
-
-    def _init_view(self, view):
-        self._view = view
-
+        self._model = Model()
+        self._view = View(self._model)
+    
 
     def show(self):
         self._view.show()
@@ -27,8 +22,8 @@ class Presenter:
         exit()
 
 
-    def start_game(self):
-        self._model.init_level(2)
+    def run_level(self, level):
+        self._model.init_level(level)
         self._view.load_textures()
         self._view.draw_background()
         self._view.create_enemies()
@@ -38,27 +33,31 @@ class Presenter:
         self.show()
 
 
-    def show_manual(self):
-        print("      WASD or Arrows - move Pacman")
-        print("     `h' or `?' - show this manual")
-        print("         `q' - quit from game")
+    def start_game(self):
+        self.run_level(self._levels[0])
 
 
-    def keyboard_input(self, event=None):
+    # def show_manual(self):
+    #     print("      WASD or Arrows - move Pacman")
+    #     print("     `h' or `?' - show this manual")
+    #     print("         `q' - quit from game")
+
+
+    def keyboard_input(self, event=None):   
         convertor = dict({
-            'w': 'U', 'Up': 'U',
-            'a': 'L', 'Left': 'L',
-            's': 'D', 'Down': 'D',
-            'd': 'R', 'Right': 'R'
+            'w': 'U', 'W': 'U', 'Up': 'U',
+            'a': 'L', 'A': 'L', 'Left': 'L',
+            's': 'D', 'S': 'D', 'Down': 'D',
+            'd': 'R', 'D': 'R', 'Right': 'R'
         })
 
         key = str(event.keysym)
         #print(key)
-        if key == 'q':
+        if key == 'q' or key == 'Q':
             self.exit()
 
-        if key == 'question' or key == 'h':
-            self.show_manual()
+        # if key == 'question' or key == 'h':
+        #     self.show_manual()
 
         if key in convertor:
             self._model.pacman.next_direction = convertor[key]
@@ -120,17 +119,43 @@ class Presenter:
         dx, dy = dir_to_vect[pacman.direction]
 
         world_width = 24 * self._model.cell_size
+        is_teleport = False
         if x + dx == -pacman.size:
             # teleport Left -> Right
+            is_teleport = True
             self.move_pacman(world_width, 0)
         elif x + dx == world_width - pacman.size + 1:
             # teleport Right -> Left
+            is_teleport = True
             self.move_pacman(-world_width, 0)
         elif self._model.is_avaiable_coord(x + dx, y + dy):
             # Standart moving
             self.move_pacman(dx, dy)
         
+        if self._model.level_finishes and is_teleport:
+            self.goto_next_level()
 
+
+    def goto_next_level(self):
+        if self._now_level == len(self._levels)-1:
+            self._model.over(1)
+            return
+        
+        scores = self._model.score_point
+        lives = self._model.pacman.lives
+
+        old_root = self._view._root
+        self._model = Model()
+        old_root.destroy()
+        self._view = View(self._model)
+        
+
+        self._model.score_point = scores
+        self._model.pacman.lives = lives
+        
+        self._now_level += 1
+        level = self._levels[self._now_level]
+        self.run_level(level)
     
 
     def kill_pacman(self):
@@ -165,7 +190,7 @@ class Presenter:
                 
 
     def end_level(self):
-        self._model.over(1)
+        pass
 
 
     def move_ghosts(self):
@@ -197,6 +222,8 @@ class Presenter:
             self.end_level()
 
         self._model.frame_time += 1
+        if not self._model.frame_time % 10:
+            self._model.score_point += 1
         self.handle_pacman_cell()
         self.update_statuses()
         self.check_ghosts_collision()

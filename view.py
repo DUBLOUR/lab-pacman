@@ -53,7 +53,7 @@ class View:
         self.model = model
         
         self.image = {}
-        self.padding = self.model.padding
+        self.textures_path = "resourses/all_textures/"
         self.last_cell_object = [[None for j in range(model.field_size[0]+2)] 
                                        for i in range(model.field_size[1]+2)] 
 
@@ -127,6 +127,14 @@ class View:
                                 color="lightgreen")
 
 
+        self._info["get_level"] = ShadowLabel(self, 
+                                text="", 
+                                x=self.window_width // 2, 
+                                y=bottom_field+20,
+                                anchor="n",
+                                size=18,
+                                color="lightgreen")
+
 
 
     def update_info(self):
@@ -134,22 +142,30 @@ class View:
         self._info["score"].update(right=m.score_point)
         self._info["level"].update(left=m.level_name)
         self._info["lives"].update(right=m.pacman.lives)
-
+ 
         if m.is_lose:
             text = "You lost to foolish red balls…"
             self._info["loose"].update(left=text)
+            self._has_big_text = True
 
         if m.is_win:
             text = "YOU WIN! CONGRATULATIONS!"
             self._info["win"].update(left=text)
 
+        if m.level_finishes and not m.is_win:
+            text = "NICE! LEAVE FROM MAP!"
+            self._info["get_level"].update(left=text)
+        else:
+            self._info["get_level"].update()
+
+
         b_time = (m.bonus_lasting - m.frame_time) / m.fps
-        if b_time > 0 and not m.game_over:
+        if b_time > 0 and not (m.is_lose or m.is_win or m.level_finishes):
             if b_time > 2.5:
                 col = "yellow"
             else:
                 col = "red"
-            s = "BONUS TIME: {:.2f}".format(b_time)
+            s = "HUNTER MODE: {:.2f}".format(b_time)
             self._info["bonus_timer"].update(right=s, color=col)
         else:
             self._info["bonus_timer"].update()
@@ -199,7 +215,7 @@ class View:
                 unical.add(t)
         
         for t in unical:
-            img = f'resourses/textures/small_{t}.png'
+            img = self.textures_path + f'small_{t}.png'
             self.image[t] = tk.PhotoImage(file=img)
         
 
@@ -272,6 +288,7 @@ class View:
                                             (p.x+p.size, p.y+p.size),
                                             fill="yellow", 
                                             outline="black", 
+                                            width=1.35,
                                             tag="pacman")
         
 
