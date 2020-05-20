@@ -3,8 +3,10 @@
     ".": ["black", "diamond_ore"],
     " ": ["blue", "stone"],
     "P": ["yellow", "stone"],
-    "B": ["orange", "mossy_cobblestone"],
+    "B": ["orange", null],
     "G": ["white", "stone"],
     "_": ["green", "oak_planks"],
-    "|": ["magenta", "stone"]
+    "|": ["magenta", "stone"],
+    "H": ["cyan", "grass2"],
+    "g": ["gray", "dirt"]
 }

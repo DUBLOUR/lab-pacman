@@ -2,7 +2,6 @@ from model import Model
 from view import View
 
 class Presenter:
-    fps = 100
     def __init__(self, model, view):
         self._init_model(model)
         self._init_view(view)
@@ -54,7 +53,7 @@ class Presenter:
         })
 
         key = str(event.keysym)
-        print(key)
+        #print(key)
         if key == 'q':
             self.exit()
 
@@ -83,7 +82,6 @@ class Presenter:
 
 
         tp = self._model.map_field[y][x]
-        #print("IS CELL", x, y, tp)
         hasChange = False
         if tp == '.':
             self._model.eat_point(y, x)
@@ -107,7 +105,6 @@ class Presenter:
     def move_ball(self):
         pacman = self._model.pacman
         x, y = pacman.get_center()
-        #print(x, y, '\t', pacman.direction, pacman.next_direction)
 
         dir_to_vect = {
             "U": [0, -1], 
@@ -137,12 +134,11 @@ class Presenter:
     
 
     def kill_pacman(self):
-        print("You are dead...")
+        self._model.kill_pacman()
 
 
     def kill_ghost(self, ghost):
         ghost.status = "fly";
-        
 
 
     def check_ghosts_collision(self):
@@ -168,9 +164,8 @@ class Presenter:
                 handle_collision(g);
                 
 
-    def end_game(self):
-        print("YAHO")
-        self.exit()
+    def end_level(self):
+        self._model.over(1)
 
 
     def move_ghosts(self):
@@ -199,7 +194,7 @@ class Presenter:
 
     def main_loop(self):
         if self._model.level_finishes:
-            self.end_game()
+            self.end_level()
 
         self._model.frame_time += 1
         self.handle_pacman_cell()
@@ -207,9 +202,10 @@ class Presenter:
         self.check_ghosts_collision()
         self.move_ghosts()
         self.move_ball()
+        self._view.update_info()
 
         
-        animation_delay = int(1000 / self.fps)
+        animation_delay = int(1000 / self._model.fps)
         self._view._root.after(animation_delay, self.main_loop)
 
 

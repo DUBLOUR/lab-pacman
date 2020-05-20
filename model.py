@@ -1,6 +1,5 @@
 import random
 import json
-import time
 
 
 def get_dist(px, py, gx, gy):
@@ -35,6 +34,12 @@ class Enemy:
         return x,y
 
 
+    def dist(self, other):
+        x1, y1 = self.get_center()
+        x2, y2 = other.get_center()
+        d = ((x1 - x2)**2 + (y1 - y2)**2) ** 0.5
+        return d
+
 
 class PacmanModel(Enemy):
     def __init__(self, model):
@@ -47,6 +52,8 @@ class PacmanModel(Enemy):
         self.init_cell = [0,0]
         self.x = 0
         self.y = 0
+        
+        self.lives = 3
                 
 
 
@@ -80,12 +87,9 @@ class GhostModel(Enemy):
 
     def get_possible_steps(self):
         x, y = self.get_center()
-        #print('\n', self.__dict__, x, y)
         if not self._model.is_cell_center(x, y):
             return self.direction
         
-        #print(x, y, '\t', pacman.direction, pacman.next_direction)
-
         dir_to_vect = {
             "U": [0, -1], 
             "D": [0, 1], 
@@ -98,7 +102,6 @@ class GhostModel(Enemy):
             if self._model.is_avaiable_coord(x + dx, y + dy):
                 possibles.append(key)
 
-        #print(self.__dict__, possibles)
         return possibles
 
 
@@ -108,16 +111,23 @@ class GhostModel(Enemy):
 
 class Model:
     def __init__(self):
-        self.padding = [12, 12+20, -12, 80]
+        self.padding = [12, 12, -12, -12]
         self.cell_size = 24
-        self.field_size = [22, 22]   
+        self.field_size = [22, 27]   
         self.score_point = 0
         self.count_diamonds = 0
         self.bonus_lasting = 0
+        self.immortality_lasting = 0
         self.frame_time = 0
+        self.fps = 100
         
         self.level_id = 0
+        self.level_name = ""
         self.level_finishes = False
+
+        self.game_over = False
+        self.is_lose = False
+        self.is_win = False
 
         self.ghosts = []
         self.pacman = PacmanModel(self)
@@ -284,15 +294,17 @@ class Model:
 
 
     def init_level(self, number):
-        def read_level_data():
-            path = f"resourses/level{str(number)}.dat"
+        directory = "resourses/levels"
+        def read_level_data(file):
+            path = f"{directory}/{file}"
             map_data = []
 
             with open(path) as f:
                 field = f.readlines()
+                level_name = field[0][:-1]
                 field[-1] += "\n"
 
-                for y in range(self.field_size[1]):
+                for y in range(1, self.field_size[1]):
                     line = []
                     for x in range(self.field_size[0]+1):
                         line.append(field[y][x])
@@ -302,12 +314,11 @@ class Model:
                 map_data.append(map_data[-1])
                 map_data.append(map_data[-1])
 
-            print(map_data)
-            return map_data
+            return level_name, map_data
 
 
-        def read_level_colors():
-            path = f"resourses/level{str(number)}_colors.json"
+        def read_level_colors(file):
+            path = f"{directory}/{file}"
             with open(path) as f:
                 colors = json.load(f)
             return colors
@@ -326,23 +337,42 @@ class Model:
 
 
         self.level_id = number
-        self.map_field = read_level_data()
-        self.map_colors = read_level_colors()
+        self.level_name, self.map_field = \
+            read_level_data(f"level{str(number)}.dat")
+        self.map_colors = read_level_colors(f"level{str(number)}_colors.json")
         parse_map()
         
 
+    def over(self, tp):
+        self.game_over = True
+        if tp:
+            self.is_win = True
+        else:
+            self.is_lose = True
+
+
+    def kill_pacman(self):
+        self.pacman.lives -= 1
+        if not self.pacman.lives:
+            self.over(0)
+
+        immortality_duration = 300
+        self.immortality_lasting = self.frame_time + immortality_duration
+        self.bonus_lasting = self.immortality_lasting
+
+
     def update_statuses(self):
+        
         if self.frame_time > self.bonus_lasting:
-            self.pacman.status = "prey"
+            self.pacman.state = "prey"
             for g in self.ghosts:
                 if g.status != "fly":
                     g.status = "hunter"
-            return
-
-        self.pacman.status = "hunter"
-        for g in self.ghosts:
-            if g.status != "fly":
-                g.status = "prey"
+        else:
+            self.pacman.state = "hunter"
+            for g in self.ghosts:
+                if g.status != "fly":
+                    g.status = "prey"
 
         
     def eat_point(self, y, x):
@@ -351,8 +381,8 @@ class Model:
         self.count_diamonds -= 1
         if not self.count_diamonds:
             self.level_finishes = True
-        print(self.score_point)
-    
+            self.over(1)
+        
 
     def eat_bonus(self, y, x):
         self.map_field[y][x] = ' '
