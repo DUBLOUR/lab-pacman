@@ -4,19 +4,25 @@ from enemyModel import *
 
 
 
-
-
 class Model:
+    fps = 50
+    __tick_to_score = 5
+    __point_score = 100
+    __bonus_score = 1000
+    __bonus_duration = 500
+    __immortality_duration = 150
+    __levels_path = "resourses/levels"
+
     def __init__(self):
         self.padding = [12, 12, -12, -12]
         self.cell_size = 24
         self.field_size = [22, 27]   
+        self.world_width = (1+self.field_size[0]+1) * self.cell_size
         self.score_point = 0
         self.count_diamonds = 0
         self.bonus_lasting = 0
         self.immortality_lasting = 0
         self.frame_time = 0
-        self.fps = 100//2
         
         self.level_id = 0
         self.level_name = ""
@@ -37,13 +43,13 @@ class Model:
         return x,y
 
     
-    def _set_pacman_init(self, x, y):
+    def __set_pacman_init(self, x, y):
         p = self.pacman
         p.init_cell = [x,y]
         p.x, p.y = self.pacman.get_start_xy()
         
 
-    def _add_ghost(self, x, y):
+    def __add_ghost(self, x, y):
         id = len(self.ghosts)
         g = GhostModel(self, id, x, y, "hunter")
         g.init_cell = [x,y]
@@ -60,11 +66,10 @@ class Model:
             need_x, need_y = g.get_start_xy()
             dx = need_x - g.x
             dy = need_y - g.y
-            #dist = get_dist(g.x, g.y, need_x, need_y)
             dist = (dx ** 2 + dy ** 2) ** 0.5
 
-            if dist <= 2:
-                return dx/2, dy/2
+            if dist <= speed:
+                return dx, dy
 
             dx *= speed / dist
             dy *= speed / dist
@@ -78,7 +83,7 @@ class Model:
             need_x, need_y = self.pacman.get_center()
 
             avaiable_steps = g.get_possible_steps()
-            ant_dir = {
+            ant_dir = { # antonims for direction
                 "U": "D",
                 "D": "U",
                 "L": "R",
@@ -149,19 +154,15 @@ class Model:
 
         
         dx, dy = func_transpose()
-        dx *= 2; dy *= 2
 
             # left <-> right teleport
-        world_width = 24 * self.cell_size
         x = g.x + dx 
         if x <= -self.pacman.size:
-            dx = world_width
-        elif x >= world_width - self.pacman.size + 1:
-            dx = -world_width
+            dx = self.world_width
+        elif x >= self.world_width - self.pacman.size + 1:
+            dx = -self.world_width
 
         return dx, dy
-
-
 
 
     def is_cell_center(self, x, y):
@@ -172,33 +173,38 @@ class Model:
 
     def is_avaiable_coord(self, x, y):
         padding = self.padding
-        cell_size = self.cell_size
+        cs = self.cell_size
         map_field = self.map_field
 
         x -= padding[0]
         y -= padding[1]
-        if x % cell_size != 0 and y % cell_size != 0:
+        
+        if x % cs != 0 and y % cs != 0:
             return False
 
-        y += cell_size // 2
-        x += cell_size // 2
-        if map_field[y // cell_size][x // cell_size] == '#':
+        y += cs // 2
+        x += cs // 2
+        if map_field[y // cs][x // cs] == '#':
             return False
-        if map_field[(y - cell_size // 2 - 0) // cell_size][x // cell_size] == '#':
+        if map_field[(y - cs // 2 - 0) // cs][x // cs] == '#':
             return False
-        if map_field[(y + cell_size // 2 - 1) // cell_size][x // cell_size] == '#':
+        if map_field[(y + cs // 2 - 1) // cs][x // cs] == '#':
             return False
-        if map_field[y // cell_size][(x - cell_size // 2 - 0) // cell_size] == '#':
+        if map_field[y // cs][(x - cs // 2 - 0) // cs] == '#':
             return False
-        if map_field[y // cell_size][(x + cell_size // 2 - 1) // cell_size] == '#':
+        if map_field[y // cs][(x + cs // 2 - 1) // cs] == '#':
             return False
         return True
 
 
+    def tick_score(self):
+        if not self.frame_time % self.__tick_to_score:
+            self.score_point += 1
+            
+
     def init_level(self, number):
-        directory = "resourses/levels"
         def read_level_data(file):
-            path = f"{directory}/{file}"
+            path = f"{self.__levels_path}/{file}"
             map_data = []
 
             with open(path) as f:
@@ -220,7 +226,7 @@ class Model:
 
 
         def read_level_colors(file):
-            path = f"{directory}/{file}"
+            path = f"{self.__levels_path}/{file}"
             with open(path) as f:
                 colors = json.load(f)
             return colors
@@ -233,9 +239,9 @@ class Model:
                     if tp == '.':
                         self.count_diamonds += 1
                     if tp == 'G':
-                        self._add_ghost(x,y)
+                        self.__add_ghost(x,y)
                     if tp == 'P':
-                        self._set_pacman_init(x,y)
+                        self.__set_pacman_init(x,y)
 
 
         self.level_id = number
@@ -258,8 +264,8 @@ class Model:
         if self.pacman.lives <= 0 and not self.is_win:
             self.game_over(0)
 
-        immortality_duration = 300 // 2
-        self.immortality_lasting = self.frame_time + immortality_duration
+        
+        self.immortality_lasting = self.frame_time + self.__immortality_duration
         self.bonus_lasting = self.immortality_lasting
 
 
@@ -279,7 +285,7 @@ class Model:
         
     def eat_point(self, y, x):
         self.map_field[y][x] = ' '
-        self.score_point += 100
+        self.score_point += self.__point_score
         self.count_diamonds -= 1
         if not self.count_diamonds:
             self.level_finishes = True
@@ -287,8 +293,7 @@ class Model:
 
     def eat_bonus(self, y, x):
         self.map_field[y][x] = ' '
-        self.score_point += 1000
-        bonus_duration = 1000 // 2
-        self.bonus_lasting = self.frame_time + bonus_duration
+        self.score_point += self.__bonus_score
+        self.bonus_lasting = self.frame_time + self.__bonus_duration
 
     

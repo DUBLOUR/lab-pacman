@@ -4,22 +4,24 @@ from tkinter.font import Font
 
 class ShadowLabel:
     def __init__(self, view, text, x, y, anchor="nw", size=12, color="#DDDDDD"):
-        self._view = view
+        self.__view = view
         self.text = text
         self.x = x
         self.y = y
-        self.last_l = None
-        self.last_r = None
-        self.last_c = None
         self.color = [color, "black"]
         self.anchor = anchor
         self.size = size
-        self._create_text("Consolas", size)
+        
+        self.last_l = None
+        self.last_r = None
+        self.last_c = None
+        
+        self.__create_text("Consolas", size)
 
 
-    def _create_text(self, font_family, size):
+    def __create_text(self, font_family, size):
         font = Font(family=font_family, size=size, weight="bold")
-        c = self._view.canvas
+        c = self.__view.canvas
         x,y = self.x, self.y
         justify = "left"
         self.id1 = c.create_text((x,y),
@@ -38,9 +40,9 @@ class ShadowLabel:
                                  anchor=self.anchor)
 
 
-
     def update(self, left="", right="", color=None):
-        if self.last_l == left and self.last_r == right and self.last_c == color:
+        if self.last_l == left and self.last_r == right and \
+                                   self.last_c == color:
             return
 
         self.last_l = left
@@ -48,7 +50,7 @@ class ShadowLabel:
         self.last_c = color
         
         text = str(left) + self.text + str(right)
-        c = self._view.canvas
+        c = self.__view.canvas
         c.itemconfig(self.id1, text=text)
         c.itemconfig(self.id2, text=text)
         if color and self.color[0] != color:
@@ -58,47 +60,47 @@ class ShadowLabel:
 
 
 class View:
+    __window_title = 'Baka-baka'
+    __icon_path = 'resourses/icon.png'
+    __textures_path = "resourses/textures/"
     
     def __init__(self, model):
-        self._model = model
+        self.__model = model
         
-        self._image = {}
-        self._textures_path = "resourses/textures/"
+        self.__image = {}
+        self.__last_ghost_color = dict()
         self.last_cell_object = [[None for j in range(model.field_size[0]+2)] 
                                        for i in range(model.field_size[1]+2)] 
 
-        self._last_ghost_color = dict()
+        self.__init_window()
+        self.__init_canvas()
+        self.__init_texts()
+
+
+    def __init_texts(self):
+        bottom_field = self.__model.cell_size * (self.__model.field_size[1]-4)
         
-        self._init_window()
-        self._init_canvas()
-        self._init_texts()        
-
-
-
-    def _init_texts(self):
-        bottom_field = self._model.cell_size * 23
-        
-        self._info = dict()
-        self._info["level"] = ShadowLabel(self, 
+        self.__info = dict()
+        self.__info["level"] = ShadowLabel(self, 
                                 text="", 
                                 x=self.window_width // 2, 
                                 y=5,
                                 anchor="n")
 
-        self._info["score"] = ShadowLabel(self, 
+        self.__info["score"] = ShadowLabel(self, 
                                 text="Score: ", 
                                 x=3, 
                                 y=bottom_field,
                                 anchor="nw")
         
-        self._info["lives"] = ShadowLabel(self, 
+        self.__info["lives"] = ShadowLabel(self, 
                                 text="Lives: ", 
                                 x=self.window_width-3, 
                                 y=bottom_field,
                                 anchor="ne",
                                 size=12)                 
 
-        self._info["bonus_timer"] = ShadowLabel(self, 
+        self.__info["bonus_timer"] = ShadowLabel(self, 
                                 text="", 
                                 x=self.window_width // 2, 
                                 y=bottom_field+25,
@@ -106,7 +108,7 @@ class View:
                                 size=18)
 
         
-        self._info["keyboard"] = ShadowLabel(self, 
+        self.__info["keyboard"] = ShadowLabel(self, 
                                 text="WASD/Arrows for move\n" + 
                                      "Q for quit, P for pause", 
                                 x=4, 
@@ -114,7 +116,7 @@ class View:
                                 anchor="sw",
                                 size=12)
 
-        self._info["copyright"] = ShadowLabel(self, 
+        self.__info["copyright"] = ShadowLabel(self, 
                                 text="© Nikitenko Maxik 2020", 
                                 x=self.window_width - 3, 
                                 y=self.window_height, 
@@ -122,7 +124,7 @@ class View:
                                 size=10)
 
         
-        self._info["loose"] = ShadowLabel(self, 
+        self.__info["loose"] = ShadowLabel(self, 
                                 text="", 
                                 x=self.window_width // 2, 
                                 y=bottom_field+20,
@@ -130,7 +132,7 @@ class View:
                                 size=18)
 
 
-        self._info["win"] = ShadowLabel(self, 
+        self.__info["win"] = ShadowLabel(self, 
                                 text="", 
                                 x=self.window_width // 2, 
                                 y=bottom_field+20,
@@ -139,69 +141,67 @@ class View:
                                 color="lightgreen")
 
 
-        self._info["get_level"] = ShadowLabel(self, 
+        self.__info["get_level"] = ShadowLabel(self, 
                                 text="", 
                                 x=self.window_width // 2, 
                                 y=bottom_field+20,
                                 anchor="n",
                                 size=18,
                                 color="lightgreen")
-
 
 
     def update_info(self):
-        m = self._model
-        self._info["score"].update(right=m.score_point)
-        self._info["level"].update(left=m.level_name)
-        self._info["lives"].update(right=m.pacman.lives)
+        m = self.__model
+        self.__info["score"].update(right=m.score_point)
+        self.__info["level"].update(left=m.level_name)
+        self.__info["lives"].update(right=m.pacman.lives)
  
         if m.is_lose:
             text = "You lost to foolish red balls…"
-            self._info["loose"].update(left=text)
+            self.__info["loose"].update(left=text)
 
         if m.is_win:
             text = "YOU WIN! CONGRATULATIONS!"
-            self._info["win"].update(left=text)
+            self.__info["win"].update(left=text)
 
         if m.level_finishes and not m.is_win:
             text = "NICE! LEAVE FROM MAP!"
-            self._info["get_level"].update(left=text)
+            self.__info["get_level"].update(left=text)
         else:
-            self._info["get_level"].update()
+            self.__info["get_level"].update()
 
 
         b_time = (m.bonus_lasting - m.frame_time) / m.fps
         if b_time > 0 and not (m.is_lose or m.is_win or m.level_finishes):
-            if b_time > 2.5:
-                col = "yellow"
+            urgent_time = 2.5 
+            if b_time > urgent_time:
+                color = "yellow"
             else:
-                col = "red"
-            s = "HUNTER MODE: {:.2f}".format(b_time)
-            self._info["bonus_timer"].update(right=s, color=col)
+                color = "red"
+
+            text = "HUNTER MODE: {:.2f}".format(b_time)
+            self.__info["bonus_timer"].update(right=text, color=color)
         else:
-            self._info["bonus_timer"].update()
+            self.__info["bonus_timer"].update()
 
 
-
-    def _init_window(self):
-        window_title = 'Baka-baka'
-        self._root = tk.Tk()
-        self._root.title(window_title)
-        self._root.resizable(width=False, height=False)
+    def __init_window(self):        
+        self.root = tk.Tk()
+        self.root.title(self.__window_title)
+        self.root.resizable(width=False, height=False)
         
-        self._icon = tk.PhotoImage(file='resourses/icon.png')
-        self._root.iconphoto(False, self._icon)
+        self.__icon = tk.PhotoImage(file=self.__icon_path)
+        self.root.iconphoto(False, self.__icon)
 
 
-
-    def _init_canvas(self):
-        m = self._model
+    def __init_canvas(self):
+        m = self.__model
         self.window_width = m.cell_size * (m.field_size[0] + 1) + \
                             m.padding[0] + m.padding[2]
         self.window_height = m.cell_size * m.field_size[1] + \
                              m.padding[1] + m.padding[3]
 
-        self.canvas = tk.Canvas(self._root, 
+        self.canvas = tk.Canvas(self.root, 
                                 width=self.window_width, 
                                 height=self.window_height,
                                 highlightthickness=0,
@@ -211,35 +211,34 @@ class View:
 
 
     def show(self):
-        self._root.mainloop()
+        self.root.mainloop()
 
 
     def move_object(self, tag, dx, dy):
         self.canvas.move(tag, dx, dy)
 
 
-    def load_textures(self):
-        textures = self._model.map_colors.values()
+    def load_level_textures(self):
+        textures = self.__model.map_colors.values()
         unical = set()
         for c,t in textures:
             if t:
                 unical.add(t)
         
         for t in unical:
-            img = self._textures_path + f'small_{t}.png'
-            self._image[t] = tk.PhotoImage(file=img)
+            img = self.__textures_path + f'small_{t}.png'
+            self.__image[t] = tk.PhotoImage(file=img)
         
 
-
-    def _get_cell_image(self, y, x):
-        cell = self._model.map_field[y][x][0]
-        convertor = self._model.map_colors
+    def __get_cell_image(self, y, x):
+        cell = self.__model.map_field[y][x][0]
+        convertor = self.__model.map_colors
         color, texture = convertor.get(cell, [None,None])
         return color, texture
 
 
     def draw_cell(self, y, x):
-        model = self._model
+        model = self.__model
         xc = x * model.cell_size + model.padding[0] - model.cell_size // 2
         yc = y * model.cell_size + model.padding[1] - model.cell_size // 2
 
@@ -247,76 +246,75 @@ class View:
         if canvas_object != None:
             self.canvas.delete(canvas_object)
 
-        color, texture = self._get_cell_image(y, x)
+        color, texture = self.__get_cell_image(y, x)
         if texture is not None:
             canvas_object = self.canvas.create_image(
                                                 xc, 
                                                 yc, 
-                                                image=self._image[texture], 
+                                                image=self.__image[texture], 
                                                 anchor=tk.NW)
         else:
             canvas_object = self.canvas.create_rectangle(
                                                 xc, 
                                                 yc, 
-                                                xc + self._model.cell_size, 
-                                                yc + self._model.cell_size, 
+                                                xc + self.__model.cell_size, 
+                                                yc + self.__model.cell_size, 
                                                 fill=color)
         
         self.canvas.tag_lower(canvas_object)
         self.last_cell_object[y][x] = canvas_object
-        #print(canvas_object)
+        # print(canvas_object)
 
     
     def draw_background(self):
-        field_size = self._model.field_size
+        field_size = self.__model.field_size
         
         for x in range(field_size[0] + 1):
             for y in range(field_size[1]):
                 self.draw_cell(y, x)
 
 
-
     def show_grid(self):
         for y in range(self.window_height):
             for x in range(self.window_width):
-                if self._model.isAvaiableCoord(x, y):
+                if self.__model.is_avaiable_coord(x, y):
                     self.canvas.create_line(x, y, x, y, width=1, fill="gray")
 
 
     def set_ghost_color(self, g, color=None):
         if not color:
             color = g.color_status[g.status]
-        if self._last_ghost_color.get(g.id, None) == color:
+        if self.__last_ghost_color.get(g.id, None) == color:
             return
 
-        self._last_ghost_color[g.id] = color
+        self.__last_ghost_color[g.id] = color
         tag = "ghost" + str(g.id)
         self.canvas.itemconfig(tag, fill=color)
 
     
     def create_enemies(self):
-        canvas = self.canvas
-        
         def create_pacman(p):
-            self.ball = canvas.create_oval( (p.x, p.y), 
-                                            (p.x+p.size, p.y+p.size),
-                                            fill="yellow", 
-                                            outline="black", 
-                                            width=1.35,
-                                            tag="pacman")
-        
+            self.ball = self.canvas.create_oval( 
+                                (p.x, p.y), 
+                                (p.x+p.size, p.y+p.size),
+                                fill="yellow", 
+                                outline="black", 
+                                width=1.35,
+                                tag="pacman")
+
 
         def create_ghost(g):
             tag = "ghost" + str(g.id)
-            col = g.color_status[g.status]
-            canvas.create_oval( (g.x, g.y), 
+            color = g.color_status[g.status]
+            self.canvas.create_oval( 
+                                (g.x, g.y), 
                                 (g.x+g.size, g.y+g.size),
-                                fill=col, 
+                                fill=color, 
                                 outline="black", 
                                 tag=tag)
 
 
-        create_pacman(self._model.pacman)
-        for g in self._model.ghosts:
+        create_pacman(self.__model.pacman)
+        for g in self.__model.ghosts:
             create_ghost(g)
             

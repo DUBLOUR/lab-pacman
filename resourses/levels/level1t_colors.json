@@ -4,9 +4,15 @@
     " ": ["blue", "stone"],
     "P": ["yellow", "stone"],
     "B": ["orange", "emerald_ore"],
-    "G": ["white", "stone"],
+    "c": ["white", "mossy_cobblestone"],
+    "G": ["white", "mossy_cobblestone"],
     "_": ["green", "oak_planks"],
     "|": ["magenta", "stone"],
     "H": ["cyan", "grass2"],
-    "g": ["gray", "dirt"]
+    "g": ["gray", "dirt"],
+    "1": ["gray", "stone_bricks"],
+    "2": ["gray", "cracked_stone_brick"],
+    "3": ["gray", "cracked_stone_bricks"],
+    "4": ["gray", "mossy_stone_bricks"],
+    "5": ["gray", "mossy_stone_bricks"]
 }
