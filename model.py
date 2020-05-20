@@ -2,17 +2,7 @@ import random
 import json
 from enemyModel import *
 
-def get_sq_dist(px, py, gx, gy):
-    dx = px - gx
-    dy = py - gy
-    return (dx**2 + dy**2)
 
-
-def get_dist(px, py, gx, gy):
-    return get_sq_dist((px, py, gx, gy)) ** 0.5
-
-def ceil(x):
-    return int(x + 1 - 1e-6)
 
 
 
@@ -26,7 +16,7 @@ class Model:
         self.bonus_lasting = 0
         self.immortality_lasting = 0
         self.frame_time = 0
-        self.fps = 100
+        self.fps = 100//2
         
         self.level_id = 0
         self.level_name = ""
@@ -61,6 +51,10 @@ class Model:
 
 
     def ghost_moving(self, g, speed):
+        def ceil(x):
+            return int(x + 1 - 1e-6)
+
+
         def fly_moving():
             need_x, need_y = g.get_start_xy()
             dx = need_x - g.x
@@ -68,8 +62,8 @@ class Model:
             #dist = get_dist(g.x, g.y, need_x, need_y)
             dist = (dx ** 2 + dy ** 2) ** 0.5
 
-            if dist <= 1:
-                return dx, dy
+            if dist <= 2:
+                return dx/2, dy/2
 
             dx *= speed / dist
             dy *= speed / dist
@@ -154,6 +148,7 @@ class Model:
 
         
         dx, dy = func_transpose()
+        dx *= 2; dy *= 2
 
             # left <-> right teleport
         world_width = 24 * self.cell_size
@@ -262,7 +257,7 @@ class Model:
         if self.pacman.lives <= 0:
             self.game_over(0)
 
-        immortality_duration = 300
+        immortality_duration = 300 // 2
         self.immortality_lasting = self.frame_time + immortality_duration
         self.bonus_lasting = self.immortality_lasting
 
@@ -292,7 +287,7 @@ class Model:
     def eat_bonus(self, y, x):
         self.map_field[y][x] = ' '
         self.score_point += 1000
-        bonus_duration = 1000
+        bonus_duration = 1000 // 2
         self.bonus_lasting = self.frame_time + bonus_duration
 
     

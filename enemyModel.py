@@ -1,9 +1,13 @@
 import random
 
-def get_dist(px, py, gx, gy):
+def get_sq_dist(px, py, gx, gy):
     dx = px - gx
     dy = py - gy
-    return (dx**2 + dy**2) ** 0.5
+    return (dx**2 + dy**2)
+
+
+def get_dist(px, py, gx, gy):
+    return get_sq_dist((px, py, gx, gy)) ** 0.5
 
 
 class Enemy:
@@ -70,7 +74,7 @@ class GhostModel(Enemy):
     def at_home(self):
         x, y = self.x, self.y
         hx, hy = self.get_start_xy()
-        return get_dist(x, y, hx, hy) < 1e-6
+        return get_sq_dist(x, y, hx, hy) <= 1e-3
 
 
     def stop_fly(self):

@@ -104,10 +104,10 @@ class Presenter:
         x, y = pacman.get_center()
 
         dir_to_vect = {
-            "U": [0, -1], 
-            "D": [0, 1], 
-            "L": [-1, 0], 
-            "R": [1, 0]
+            "U": [0, -2], 
+            "D": [0, 2], 
+            "L": [-2, 0], 
+            "R": [2, 0]
         }
         dx, dy = dir_to_vect[pacman.next_direction]
 
@@ -118,11 +118,11 @@ class Presenter:
 
         world_width = 24 * self._model.cell_size
         is_teleport = False
-        if x + dx == -pacman.size:
+        if x + dx <= -pacman.size:
             # teleport Left -> Right
             is_teleport = True
             self._move_pacman(world_width, 0)
-        elif x + dx == world_width - pacman.size + 1:
+        elif x + dx >= world_width - pacman.size + 1:
             # teleport Right -> Left
             is_teleport = True
             self._move_pacman(-world_width, 0)
@@ -214,7 +214,7 @@ class Presenter:
 
     def _main_loop(self):
         self._model.frame_time += 1
-        if not self._model.frame_time % 10:
+        if not self._model.frame_time % 5:
             self._model.score_point += 1
         self._handle_pacman_cell()
         self._update_statuses()
