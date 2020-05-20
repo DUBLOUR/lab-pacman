@@ -8,6 +8,9 @@ class ShadowLabel:
         self.text = text
         self.x = x
         self.y = y
+        self.last_l = None
+        self.last_r = None
+        self.last_c = None
         self.color = [color, "black"]
         self.anchor = anchor
         self.size = size
@@ -37,6 +40,13 @@ class ShadowLabel:
 
 
     def update(self, left="", right="", color=None):
+        if self.last_l == left and self.last_r == right and self.last_c == color:
+            return
+
+        self.last_l = left
+        self.last_r = right
+        self.last_c = color
+        
         text = str(left) + self.text + str(right)
         c = self._view.canvas
         c.itemconfig(self.id1, text=text)
@@ -57,6 +67,8 @@ class View:
         self.last_cell_object = [[None for j in range(model.field_size[0]+2)] 
                                        for i in range(model.field_size[1]+2)] 
 
+        self._last_ghost_color = dict()
+        
         self._init_window()
         self._init_canvas()
         self._init_texts()        
@@ -146,7 +158,6 @@ class View:
         if m.is_lose:
             text = "You lost to foolish red balls…"
             self._info["loose"].update(left=text)
-            self._has_big_text = True
 
         if m.is_win:
             text = "YOU WIN! CONGRATULATIONS!"
@@ -173,7 +184,7 @@ class View:
 
 
     def _init_window(self):
-        window_title = 'Baka-baka-baka'
+        window_title = 'Baka-baka'
         self._root = tk.Tk()
         self._root.title(window_title)
         self._root.resizable(width=False, height=False)
@@ -275,9 +286,12 @@ class View:
     def set_ghost_color(self, g, color=None):
         if not color:
             color = g.color_status[g.status]
+        if self._last_ghost_color.get(g.id, None) == color:
+            return
+
+        self._last_ghost_color[g.id] = color
         tag = "ghost" + str(g.id)
-        need_object = self.canvas.find_withtag(tag)[0]
-        self.canvas.itemconfig(need_object, fill=color)
+        self.canvas.itemconfig(tag, fill=color)
 
     
     def create_enemies(self):

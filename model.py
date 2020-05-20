@@ -2,10 +2,14 @@ import random
 import json
 from enemyModel import *
 
-def get_dist(px, py, gx, gy):
+def get_sq_dist(px, py, gx, gy):
     dx = px - gx
     dy = py - gy
-    return (dx**2 + dy**2) ** 0.5
+    return (dx**2 + dy**2)
+
+
+def get_dist(px, py, gx, gy):
+    return get_sq_dist((px, py, gx, gy)) ** 0.5
 
 def ceil(x):
     return int(x + 1 - 1e-6)
@@ -103,15 +107,15 @@ class Model:
                 ind = avaiable_steps.index(ant_dir) 
                 weights[ind] *= motivations["turn_around"]
             
+            p = self.pacman
+            now_dist = get_sq_dist(g.x, g.y, p.x, p.y)
             for i in range(len(avaiable_steps)):
                 x = g.x + vct[avaiable_steps[i]][0]
                 y = g.y + vct[avaiable_steps[i]][1]
-                p = self.pacman
-                now_dist = get_dist(g.x, g.y, p.x, p.y)
-                new_dist = get_dist(x, y, p.x, p.y)
+                new_dist = get_sq_dist(x, y, p.x, p.y)
                 if new_dist < now_dist: # closer to pacman
                     weights[i] *= motivations["to_pac"]
-                    if new_dist < 4*self.cell_size:
+                    if new_dist < (4*self.cell_size)**2:
                         weights[i] *= motivations["to_close_pac"]
 
             g.direction = random.choices(avaiable_steps, weights)[0]
