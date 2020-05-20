@@ -15,7 +15,6 @@ class Enemy:
 
         self.direction = None
         self.next_direction = None
-        
 
     
     def get_center(self):

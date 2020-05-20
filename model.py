@@ -28,7 +28,6 @@ class Model:
         self.level_name = ""
         self.level_finishes = False
 
-        self.game_over = False
         self.is_lose = False
         self.is_win = False
 
@@ -43,13 +42,13 @@ class Model:
         return x,y
 
     
-    def set_pacman_init(self, x, y):
+    def _set_pacman_init(self, x, y):
         p = self.pacman
         p.init_cell = [x,y]
         p.x, p.y = self.pacman.get_start_xy()
         
 
-    def add_ghost(self, x, y):
+    def _add_ghost(self, x, y):
         id = len(self.ghosts)
         g = GhostModel(self, id, x, y, "hunter")
         g.init_cell = [x,y]
@@ -234,9 +233,9 @@ class Model:
                     if tp == '.':
                         self.count_diamonds += 1
                     if tp == 'G':
-                        self.add_ghost(x,y)
+                        self._add_ghost(x,y)
                     if tp == 'P':
-                        self.set_pacman_init(x,y)
+                        self._set_pacman_init(x,y)
 
 
         self.level_id = number
@@ -247,9 +246,8 @@ class Model:
         parse_map()
         
 
-    def over(self, tp):
-        self.game_over = True
-        if tp:
+    def game_over(self, res):
+        if res:
             self.is_win = True
         else:
             self.is_lose = True
@@ -258,7 +256,7 @@ class Model:
     def kill_pacman(self):
         self.pacman.lives -= 1
         if self.pacman.lives <= 0:
-            self.over(0)
+            self.game_over(0)
 
         immortality_duration = 300
         self.immortality_lasting = self.frame_time + immortality_duration

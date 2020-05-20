@@ -4,7 +4,7 @@ from tkinter.font import Font
 
 class ShadowLabel:
     def __init__(self, view, text, x, y, anchor="nw", size=12, color="#DDDDDD"):
-        self.view = view
+        self._view = view
         self.text = text
         self.x = x
         self.y = y
@@ -16,7 +16,7 @@ class ShadowLabel:
 
     def _create_text(self, font_family, size):
         font = Font(family=font_family, size=size, weight="bold")
-        c = self.view.canvas
+        c = self._view.canvas
         x,y = self.x, self.y
         justify = "left"
         self.id1 = c.create_text((x,y),
@@ -38,7 +38,7 @@ class ShadowLabel:
 
     def update(self, left="", right="", color=None):
         text = str(left) + self.text + str(right)
-        c = self.view.canvas
+        c = self._view.canvas
         c.itemconfig(self.id1, text=text)
         c.itemconfig(self.id2, text=text)
         if color and self.color[0] != color:
@@ -50,10 +50,10 @@ class ShadowLabel:
 class View:
     
     def __init__(self, model):
-        self.model = model
+        self._model = model
         
-        self.image = {}
-        self.textures_path = "resourses/all_textures/"
+        self._image = {}
+        self._textures_path = "resourses/textures/"
         self.last_cell_object = [[None for j in range(model.field_size[0]+2)] 
                                        for i in range(model.field_size[1]+2)] 
 
@@ -64,7 +64,7 @@ class View:
 
 
     def _init_texts(self):
-        bottom_field = self.model.cell_size * 23
+        bottom_field = self._model.cell_size * 23
         
         self._info = dict()
         self._info["level"] = ShadowLabel(self, 
@@ -138,7 +138,7 @@ class View:
 
 
     def update_info(self):
-        m = self.model
+        m = self._model
         self._info["score"].update(right=m.score_point)
         self._info["level"].update(left=m.level_name)
         self._info["lives"].update(right=m.pacman.lives)
@@ -184,7 +184,7 @@ class View:
 
 
     def _init_canvas(self):
-        m = self.model
+        m = self._model
         self.window_width = m.cell_size * (m.field_size[0] + 1) + \
                             m.padding[0] + m.padding[2]
         self.window_height = m.cell_size * m.field_size[1] + \
@@ -208,27 +208,27 @@ class View:
 
 
     def load_textures(self):
-        textures = self.model.map_colors.values()
+        textures = self._model.map_colors.values()
         unical = set()
         for c,t in textures:
             if t:
                 unical.add(t)
         
         for t in unical:
-            img = self.textures_path + f'small_{t}.png'
-            self.image[t] = tk.PhotoImage(file=img)
+            img = self._textures_path + f'small_{t}.png'
+            self._image[t] = tk.PhotoImage(file=img)
         
 
 
-    def get_cell_image(self, y, x):
-        cell = self.model.map_field[y][x][0]
-        convertor = self.model.map_colors
+    def _get_cell_image(self, y, x):
+        cell = self._model.map_field[y][x][0]
+        convertor = self._model.map_colors
         color, texture = convertor.get(cell, [None,None])
         return color, texture
 
 
     def draw_cell(self, y, x):
-        model = self.model
+        model = self._model
         xc = x * model.cell_size + model.padding[0] - model.cell_size // 2
         yc = y * model.cell_size + model.padding[1] - model.cell_size // 2
 
@@ -236,19 +236,19 @@ class View:
         if canvas_object != None:
             self.canvas.delete(canvas_object)
 
-        color, texture = self.get_cell_image(y, x)
+        color, texture = self._get_cell_image(y, x)
         if texture is not None:
             canvas_object = self.canvas.create_image(
                                                 xc, 
                                                 yc, 
-                                                image=self.image[texture], 
+                                                image=self._image[texture], 
                                                 anchor=tk.NW)
         else:
             canvas_object = self.canvas.create_rectangle(
                                                 xc, 
                                                 yc, 
-                                                xc + self.model.cell_size, 
-                                                yc + self.model.cell_size, 
+                                                xc + self._model.cell_size, 
+                                                yc + self._model.cell_size, 
                                                 fill=color)
         
         self.canvas.tag_lower(canvas_object)
@@ -257,7 +257,7 @@ class View:
 
     
     def draw_background(self):
-        field_size = self.model.field_size
+        field_size = self._model.field_size
         
         for x in range(field_size[0] + 1):
             for y in range(field_size[1]):
@@ -268,7 +268,7 @@ class View:
     def show_grid(self):
         for y in range(self.window_height):
             for x in range(self.window_width):
-                if self.model.isAvaiableCoord(x, y):
+                if self._model.isAvaiableCoord(x, y):
                     self.canvas.create_line(x, y, x, y, width=1, fill="gray")
 
 
@@ -302,7 +302,7 @@ class View:
                                 tag=tag)
 
 
-        create_pacman(self.model.pacman)
-        for g in self.model.ghosts:
+        create_pacman(self._model.pacman)
+        for g in self._model.ghosts:
             create_ghost(g)
             

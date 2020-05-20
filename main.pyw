@@ -4,7 +4,8 @@ from presenter import *
 
 
 def main():
-    presenter = Presenter()
+    presenter = Presenter(levels=["1t", "2"])
+    # presenter = Presenter(levels=["1", "2"])
     presenter.start_game()
 
 

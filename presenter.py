@@ -2,48 +2,50 @@ from model import Model
 from view import View
 
 class Presenter:
-    def __init__(self):
-        self._levels = ["1t", "2"]
+    def __init__(self, levels):
+        self._levels = levels
         self._now_level = 0
 
         self._model = Model()
         self._view = View(self._model)
     
 
-    def show(self):
+    def start_game(self):
+        self._run_level(self._levels[0])
+
+
+    def _show(self):
         self._view.show()
 
 
-    def set_binds(self):
-        self._view.canvas.bind('<Key>', self.keyboard_input)
+    def _set_binds(self):
+        self._view.canvas.bind('<Key>', self._keyboard_input)
 
 
-    def exit(self):
+    def _exit(self):
         exit()
 
 
-    def run_level(self, level):
+    def _run_level(self, level):
         self._model.init_level(level)
         self._view.load_textures()
         self._view.draw_background()
         self._view.create_enemies()
-        self.set_binds()
+        self._set_binds()
         #view.show_grid()
-        self.main_loop()
-        self.show()
+        self._main_loop()
+        self._show()
 
 
-    def start_game(self):
-        self.run_level(self._levels[0])
 
 
-    # def show_manual(self):
-    #     print("      WASD or Arrows - move Pacman")
-    #     print("     `h' or `?' - show this manual")
-    #     print("         `q' - quit from game")
+    def _show_manual(self):
+        print("      WASD or Arrows - move Pacman")
+        print("     `h' or `?' - show this manual")
+        print("         `q' - quit from game")
 
 
-    def keyboard_input(self, event=None):   
+    def _keyboard_input(self, event=None):   
         convertor = dict({
             'w': 'U', 'W': 'U', 'Up': 'U',
             'a': 'L', 'A': 'L', 'Left': 'L',
@@ -54,21 +56,17 @@ class Presenter:
         key = str(event.keysym)
         #print(key)
         if key == 'q' or key == 'Q':
-            self.exit()
+            self._exit()
 
-        # if key == 'question' or key == 'h':
-        #     self.show_manual()
+        if key == 'question' or key == 'h':
+            self._show_manual()
 
         if key in convertor:
             self._model.pacman.next_direction = convertor[key]
 
 
 
-    def open_next_level(self):
-        pass
-
-
-    def handle_pacman_cell(self):
+    def _handle_pacman_cell(self):
         x, y = self._model.pacman.get_center()
         if  not self._model.is_cell_center(x, y):
             return
@@ -94,14 +92,14 @@ class Presenter:
             self._view.draw_cell(y, x)
 
 
-    def move_pacman(self, x, y):
+    def _move_pacman(self, x, y):
         p = self._model.pacman
         p.x += x; 
         p.y += y
         self._view.move_object("pacman", x, y)
 
 
-    def move_ball(self):
+    def _move_ball(self):
         pacman = self._model.pacman
         x, y = pacman.get_center()
 
@@ -123,22 +121,22 @@ class Presenter:
         if x + dx == -pacman.size:
             # teleport Left -> Right
             is_teleport = True
-            self.move_pacman(world_width, 0)
+            self._move_pacman(world_width, 0)
         elif x + dx == world_width - pacman.size + 1:
             # teleport Right -> Left
             is_teleport = True
-            self.move_pacman(-world_width, 0)
+            self._move_pacman(-world_width, 0)
         elif self._model.is_avaiable_coord(x + dx, y + dy):
             # Standart moving
-            self.move_pacman(dx, dy)
+            self._move_pacman(dx, dy)
         
         if self._model.level_finishes and is_teleport:
-            self.goto_next_level()
+            self._goto_next_level()
 
 
-    def goto_next_level(self):
+    def _goto_next_level(self):
         if self._now_level == len(self._levels)-1:
-            self._model.over(1)
+            self._model.game_over(1)
             return
         
         scores = self._model.score_point
@@ -155,27 +153,27 @@ class Presenter:
         
         self._now_level += 1
         level = self._levels[self._now_level]
-        self.run_level(level)
+        self._run_level(level)
     
 
-    def kill_pacman(self):
+    def _kill_pacman(self):
         self._model.kill_pacman()
 
 
-    def kill_ghost(self, ghost):
+    def _kill_ghost(self, ghost):
         ghost.status = "fly";
 
 
-    def check_ghosts_collision(self):
+    def _check_ghosts_collision(self):
         def handle_collision(g):
             if g.status == "fly":
                 return;
 
             #print("IS COLLISTION WITH", g.id, "!!!")
             if pac.state == "prey":
-                self.kill_pacman()
+                self._kill_pacman()
             elif pac.state == "hunter":
-                self.kill_ghost(g)
+                self._kill_ghost(g)
 
 
         pac = self._model.pacman
@@ -189,11 +187,8 @@ class Presenter:
                 handle_collision(g);
                 
 
-    def end_level(self):
-        pass
 
-
-    def move_ghosts(self):
+    def _move_ghosts(self):
         for g in self._model.ghosts:
             if g.at_home() and g.status == "fly":
                 g.stop_fly()
@@ -205,7 +200,7 @@ class Presenter:
             self._view.move_object(tag, dx, dy)
 
 
-    def update_statuses(self):
+    def _update_statuses(self):
         self._model.update_statuses()
         for g in self._model.ghosts:
             color = {
@@ -217,23 +212,20 @@ class Presenter:
 
 
 
-    def main_loop(self):
-        if self._model.level_finishes:
-            self.end_level()
-
+    def _main_loop(self):
         self._model.frame_time += 1
         if not self._model.frame_time % 10:
             self._model.score_point += 1
-        self.handle_pacman_cell()
-        self.update_statuses()
-        self.check_ghosts_collision()
-        self.move_ghosts()
-        self.move_ball()
+        self._handle_pacman_cell()
+        self._update_statuses()
+        self._check_ghosts_collision()
+        self._move_ghosts()
+        self._move_ball()
         self._view.update_info()
 
         
         animation_delay = int(1000 / self._model.fps)
-        self._view._root.after(animation_delay, self.main_loop)
+        self._view._root.after(animation_delay, self._main_loop)
 
 
 
