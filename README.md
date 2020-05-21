@@ -25,4 +25,4 @@
 - Arch Linux 64bit ([xorg](https://ru.wikipedia.org/wiki/X.Org_Server)) с python 3.8.0
 - Linux Mint 32bit, python3.6.9.
 - Windows 7 64bit, python 3.6.7
-- Частично проверена на Windows 10 64bit.
+- Windows 10 64bit, python 3.8.0.
